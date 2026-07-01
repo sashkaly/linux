@@ -3,8 +3,12 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install -y build-essential clang curl wget git vim nano
 sudo apt install -y libreoffice gimp p7zip-full
 
-ip a
-ping -c 3 google.com
+настроить интернет-соединение
+ip a - узнать имена сетевых интерфейсов.
+sudo ip link set enp0s3 down  - отключение от сетевого интерфейса enp0s3. (DOWN)
+sudo ip link set enp0s3 up - включение сетевого интерфейса.
+ping -c 4 google.com проверка интернет соединения.
+
 
 sudo apt install -y openssh-server
 sudo systemctl enable --now ssh
@@ -19,11 +23,37 @@ sudo timeshift --create --comments "Initial_backup" --yes
 
 sudo dd if=/dev/sda1 bs=4M status=progress | gzip > /home/ubuntu_system_image.img.gz #заменить dev/sda1 на корневую папку (lsblk)
 
+
+vm.swappiness — определяет склонность системы к использованию swap. Для ВМ лучше снизить, чтобы избежать излишней подкачки. Значение 10 означает, что система будет стараться держать данные в ОЗУ, а не в swap.
+Вывод всех параметров ядра: sysctl –a 
+
+Настроййка ядра:
 sudo ubuntu-drivers autoinstall
 sudo sysctl -w net.ipv4.tcp_syncookies=1        # защита от SYN-атак
 sudo sysctl -w vm.swappiness=10                 # меньше использовать swap
 sudo sysctl -w kernel.printk=3 3 3 3           # уменьшить логи ядра
 sudo sysctl -p --system                         # применить все изменения
+
+или
+
+Настройка ядра:
+echo 'vm.swappiness = 10' | sudo tee -a /etc/sysctl.conf
+vm.vfs_cache_pressure — регулирует кэширование VFS‑объектов (каталогов, inodes). Снижение значения помогает лучше кэшировать данные.
+echo 'vm.vfs_cache_pressure = 50' | sudo tee -a /etc/sysctl.conf
+Сетевая настройка.
+net.core.rmem_max и net.core.wmem_max — увеличивают максимальный размер буферов приёма и отправки. Полезно при интенсивной сетевой нагрузке.
+echo 'net.core.rmem_max = 26214400' | sudo tee -a /etc/sysctl.conf
+echo 'net.core.wmem_max = 26214400' | sudo tee -a /etc/sysctl.conf
+net.ipv4.tcp_timestamps — отключает временные метки TCP, что снижает нагрузку на процессор.
+echo 'net.ipv4.tcp_timestamps = 0' | sudo tee -a /etc/sysctl.conf
+
+Проверить, что настройки применились:
+sysctl vm.swappiness
+sysctl vm.vfs_cache_pressure
+sysctl net.core.rmem_max
+sysctl net.core.wmem_max
+sysctl net.ipv4.tcp_timestamps
+
 
 sudo groupadd developers
 sudo useradd -m -g developers exam_user
@@ -41,3 +71,85 @@ sudo ufw --force enable
 sudo ufw logging on
 sudo ufw allow 22              # если нужен SSH
 sudo ufw status verbose
+
+
+
+
+
+
+
+
+
+
+
+# ===== 1. ОБНОВЛЕНИЕ И БАЗОВОЕ ПО =====
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y libreoffice gnome-calculator p7zip-full
+
+# ===== 2. СЕТЬ =====
+ip a
+ping -c 4 google.com
+
+# ===== 3. ЯДРО =====
+sysctl -a
+sudo sysctl -p --system
+sysctl vm.swappiness
+sysctl net.ipv4.tcp_syncookies
+
+# ===== 4. SSH =====
+sudo apt install -y openssh-server
+sudo systemctl enable --now ssh
+sudo systemctl status ssh
+
+# ===== 5. ВИРТУАЛЬНЫЙ ПРИНТЕР =====
+sudo apt install -y cups printer-driver-cups-pdf
+sudo systemctl enable --now cups
+lpstat -p -d
+
+# ===== 6. РЕЗЕРВНОЕ КОПИРОВАНИЕ =====
+sudo apt install -y timeshift
+sudo timeshift --create --comments "Backup" --yes
+sudo timeshift --list
+# (замените /dev/vda2 на ваш раздел)
+sudo dd if=/dev/vda2 bs=4M status=progress | gzip > ~/system_image.img.gz
+
+# ===== 7. ПОЛЬЗОВАТЕЛИ И ГРУППЫ =====
+sudo groupadd developers
+sudo groupadd admins
+sudo useradd -m -g developers exam_user
+echo "exam_user:Password123" | sudo chpasswd
+sudo usermod -aG admins exam_user
+sudo mkdir -p /opt/project
+sudo chown :developers /opt/project
+sudo chmod 770 /opt/project
+ls -la /opt/project
+
+# ===== 8. АУДИТ И ЖУРНАЛЫ =====
+sudo apt install -y auditd
+sudo systemctl enable --now auditd
+echo 'auth,authpriv.* /var/log/auth-monitor.log' | sudo tee /etc/rsyslog.d/99-authmon.conf
+sudo systemctl restart rsyslog
+sudo ls /root > /dev/null
+sudo tail -n 5 /var/log/auth-monitor.log
+
+# ===== 9. ФАЕРВОЛ =====
+sudo apt install -y ufw
+sudo ufw --force enable
+sudo ufw logging on
+sudo ufw allow 22
+sudo ufw status verbose
+
+# ===== 10. СОВМЕСТИМОСТЬ GUI =====
+export QT_AUTO_SCREEN_SCALE_FACTOR=0
+export GDK_SCALE=1
+echo 'export QT_AUTO_SCREEN_SCALE_FACTOR=0' >> ~/.bashrc
+echo 'export GDK_SCALE=1' >> ~/.bashrc
+source ~/.bashrc
+
+# ===== 11. СПЕЦИФИЧНОЕ ПО =====
+sudo snap install android-studio --classic
+sudo apt install -y qemu-system-x86 libvirt-daemon-system
+sudo adduser $USER kvm
+sudo apt install -y virtualbox
+sudo apt install -y clamav
+clamscan -r /home
