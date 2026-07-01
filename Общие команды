@@ -1,0 +1,43 @@
+
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y build-essential clang curl wget git vim nano
+sudo apt install -y libreoffice gimp p7zip-full
+
+ip a
+ping -c 3 google.com
+
+sudo apt install -y openssh-server
+sudo systemctl enable --now ssh
+sudo systemctl status ssh
+
+sudo apt install -y cups printer-driver-cups-pdf
+sudo systemctl enable --now cups
+lpstat -p -d  
+
+sudo apt install -y timeshift
+sudo timeshift --create --comments "Initial_backup" --yes
+
+sudo dd if=/dev/sda1 bs=4M status=progress | gzip > /home/ubuntu_system_image.img.gz #заменить dev/sda1 на корневую папку (lsblk)
+
+sudo ubuntu-drivers autoinstall
+sudo sysctl -w net.ipv4.tcp_syncookies=1        # защита от SYN-атак
+sudo sysctl -w vm.swappiness=10                 # меньше использовать swap
+sudo sysctl -w kernel.printk=3 3 3 3           # уменьшить логи ядра
+sudo sysctl -p --system                         # применить все изменения
+
+sudo groupadd developers
+sudo useradd -m -g developers exam_user
+echo "exam_user:daun1daun2" | sudo chpasswd
+sudo mkdir -p /opt/project_data
+sudo chown root:developers /opt/project_data
+sudo chmod 770 /opt/project_data
+
+sudo apt install -y auditd
+sudo systemctl enable --now auditd
+sudo ausearch -m user_login
+
+sudo apt install -y ufw
+sudo ufw --force enable
+sudo ufw logging on
+sudo ufw allow 22              # если нужен SSH
+sudo ufw status verbose
