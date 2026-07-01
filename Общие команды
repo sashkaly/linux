@@ -18,6 +18,19 @@ sudo apt install -y cups printer-driver-cups-pdf
 sudo systemctl enable --now cups
 lpstat -p -d  
 
+# Переход в режим администратора
+sudo su -
+
+# Создание резервной копии системы (исключая временные и системные папки)
+tar cvpzf /backup.tgz \
+  --exclude=/proc \
+  --exclude=/lost+found \
+  --exclude=/backup.tgz \
+  --exclude=/mnt \
+  --exclude=/sys \
+  --exclude=/web \
+  /
+
 sudo apt install -y timeshift
 sudo timeshift --create --comments "Initial_backup" --yes
 
@@ -152,4 +165,18 @@ sudo apt install -y qemu-system-x86 libvirt-daemon-system
 sudo adduser $USER kvm
 sudo apt install -y virtualbox
 sudo apt install -y clamav
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 clamscan -r /home
