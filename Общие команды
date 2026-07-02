@@ -1,3 +1,6 @@
+Очистить историю: rm ~/.mozilla/firefox/*.default/*.sqlite
+Удалить firefox и сбросить его: pkill firefox && rm -rf ~/.mozilla/firefox ~/.cache/mozilla ~/.local/share/mozilla ~/.config/mozilla
+
 
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y build-essential clang curl wget git vim nano
